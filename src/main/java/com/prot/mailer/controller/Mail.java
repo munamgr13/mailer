@@ -18,6 +18,7 @@ public class Mail {
     @PostMapping("/send")
     public String sendContactMail(@RequestBody ContactUsRequest request) {
         try {
+            System.out.println("Trying to send mail");
             contactUsService.sendContactUsEmail(request);
             return "Email sent successfully!";
         } catch (Exception e) {
@@ -26,3 +27,4 @@ public class Mail {
         }
     }
 }
+
