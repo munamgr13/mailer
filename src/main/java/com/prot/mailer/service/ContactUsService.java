@@ -1,37 +1,37 @@
 package com.prot.mailer.service;
 
-
 import com.prot.mailer.dto.ContactUsRequest;
+import com.resend.Resend;
+import com.resend.services.emails.model.CreateEmailOptions;
+import com.resend.services.emails.model.CreateEmailResponse;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSenderImpl;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
-import jakarta.mail.internet.MimeMessage;
 import java.io.StringWriter;
-import java.util.Properties;
 
 @Service
 public class ContactUsService {
 
-    @Autowired
-    private VelocityEngine velocityEngine;
+    private final VelocityEngine velocityEngine;
 
-    @Value("${email-notification.smtp-host}")
-    private String smtpHost;
+    @Value("${resend.api-key}")
+    private String resendApiKey;  // Use the API key here
 
-    @Value("${email-notification.smtp-port}")
-    private Integer smtpPort;
-    @Value("${email-notification.smtp-username}")
-    private String smtpUsername;
-    @Value("${email-notification.smtp-password}")
-    private String smtpPassword;
+    @Value("${resend.from-email:no-reply@resend.dev}") // default fallback
+    private String fromEmail;
+
+    @Value("${resend.to-email}")
+    private String toEmail;
+
+    public ContactUsService(VelocityEngine velocityEngine) {
+        this.velocityEngine = velocityEngine;
+    }
 
     public void sendContactUsEmail(ContactUsRequest request) throws Exception {
-        // 1. Prepare email body
+
+        // 1. Render the email body using Velocity
         VelocityContext context = new VelocityContext();
         context.put("name", request.getName());
         context.put("email", request.getEmail());
@@ -40,29 +40,23 @@ public class ContactUsService {
 
         StringWriter writer = new StringWriter();
         velocityEngine.mergeTemplate("velocity/contact-us.vm", "UTF-8", context, writer);
-        String emailContent = writer.toString();
+        String htmlContent = writer.toString();
 
-        // 2. Configure JavaMailSender
-        JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
-        mailSender.setHost(smtpHost);
-        mailSender.setPort(smtpPort);
-        mailSender.setUsername(smtpUsername);
-        mailSender.setPassword(smtpPassword);
+        // 2. Initialize Resend client with API key
+        Resend client = new Resend(resendApiKey);
 
-        Properties props = new Properties();
-        props.put("mail.transport.protocol", "smtp");
-        props.put("mail.smtp.auth", "true");
-        props.put("mail.smtp.starttls.enable", "true");
-        mailSender.setJavaMailProperties(props);
+        // 3. Build the email request
+        CreateEmailOptions emailOptions = CreateEmailOptions.builder()
+                .from(fromEmail)              // must be verified domain or no-reply@resend.dev
+                .to(toEmail)                  // recipient
+                .subject("New Contact Us Message - " + request.getSubject())
+                .html(htmlContent)
+                .build();
 
-        // 3. Send email
-        MimeMessage mimeMessage = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
-        helper.setFrom("dssuman525@gmail.com");
-        helper.setTo("munamgr13@gmail.com"); // recipient
-        helper.setSubject("New Contact Us Message - " + request.getSubject());
-        helper.setText(emailContent, true); // true = HTML
+        // 4. Send email
+        CreateEmailResponse response = client.emails().send(emailOptions);
 
-        mailSender.send(mimeMessage);
+        // Optional: log email ID
+        System.out.println("Sent email ID: " + response.getId());
     }
 }
