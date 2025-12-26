@@ -1,0 +1,5 @@
+com\prot\mailer\controller\Mail.class
+com\prot\mailer\service\ContactUsService.class
+com\prot\mailer\dto\ContactUsRequest.class
+com\prot\mailer\config\VelocityConfig.class
+com\prot\mailer\MailerApplication.class

@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: mailer
+
+
+
+email-notification:
+  smtp-host: ${SMTP_HOST_INTERNAL_SERVER:smtp.gmail.com}
+  smtp-port: ${SMTP_PORT_INTERNAL_SERVER:587}
+  smtp-username: ${SMTP_USERNAME_INTERNAL_SERVER:sumandevkota.work@gmail.com}
+  smtp-password: ${SMTP_PASSWORD_INTERNAL_SERVER:dtuf zbpu umgo phbm}
